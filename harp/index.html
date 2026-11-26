@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>synthwave harp</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: #040306; overflow: hidden; font-family: 'IBM Plex Mono', monospace; color: #e6d9f2; }
+  canvas { display: block; touch-action: none; cursor: none; }
+  h1 { position: fixed; top: 20px; left: 24px; margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.12em; pointer-events: none; }
+  #hint { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); width: max-content; max-width: 88vw; font-size: 12px; line-height: 1.7; letter-spacing: 0.03em; text-align: center; text-wrap: balance; opacity: 0.7; pointer-events: none; transition: opacity 1.6s; }
+  #hint.hide { opacity: 0; }
+</style>
+</head>
+<body>
+<h1>synthwave harp</h1>
+<div id="hint">drag slowly across the threads to pluck them. your first touch or click turns the sound on. hard plucks hit like a stab, and low threads sink into the dark.</div>
+<script>
+// a soft pentatonic, low to high
+const NOTES = [196, 220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.26, 784, 880, 1046.5];
+// pastel threads on a dark night: pink, lavender, mint
+const PALETTE = [[255, 186, 216], [206, 186, 255], [178, 232, 214]];
+// the flower cursor: pale butter yellow
+const FLOWER = [255, 236, 170];
+
+let ctx = null;
+let master = null;
+let strings = [];
+let hintEl = null;
+let hintHidden = false;
+let cursorX = 0;
+let cursorY = 0;
+
+// audio
+
+function initAudio() {
+  if (ctx) return;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {
+    return; // no audio support, the visuals still work
+  }
+  master = ctx.createGain();
+  master.gain.value = 0.3;
+  master.connect(ctx.destination);
+
+  // slow, soft echo
+  const delay = ctx.createDelay(1.5);
+  delay.delayTime.value = 0.5;
+  const fb = ctx.createGain();
+  fb.gain.value = 0.42;
+  const fbFilter = ctx.createBiquadFilter();
+  fbFilter.type = 'lowpass';
+  fbFilter.frequency.value = 1800;
+  delay.connect(fb);
+  fb.connect(fbFilter);
+  fbFilter.connect(delay);
+  master.connect(delay);
+  delay.connect(ctx.destination);
+}
+
+function unlockAudio() {
+  initAudio();
+  if (ctx && ctx.state === 'suspended') ctx.resume();
+}
+
+function hideHint() {
+  if (!hintHidden && hintEl) {
+    hintEl.classList.add('hide');
+    hintHidden = true;
+  }
+}
+
+function driveCurve(k) {
+  const n = 1024;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    curve[i] = Math.tanh(k * x) / Math.tanh(k);
+  }
+  return curve;
+}
+
+// soft voice: sine body, gentle triangle edge, slow swell
+function playNote(freq, vel) {
+  if (!ctx) return;
+  hideHint();
+  const t = ctx.currentTime;
+  const amp = constrain(vel, 0.15, 1);
+
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.exponentialRampToValueAtTime(0.45 * amp, t + 0.03);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + 4.5);
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.Q.value = 0.5;
+  lp.frequency.setValueAtTime(900 + 1400 * amp, t);
+  lp.frequency.exponentialRampToValueAtTime(400, t + 3);
+  out.connect(lp);
+  lp.connect(master);
+
+  [[freq, 'sine', 0.7], [freq * 2.001, 'triangle', 0.15]].forEach(([f, type, level]) => {
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    g.gain.value = level;
+    o.connect(g);
+    g.connect(out);
+    o.start(t);
+    o.stop(t + 4.6);
+  });
+}
+
+// dark voice, in the spirit of gesaffelstein: a driven sub bass with a kick
+function playDeep(freq, vel) {
+  if (!ctx) return;
+  hideHint();
+  const t = ctx.currentTime;
+  const amp = constrain(vel, 0.3, 1);
+
+  // heavy grit, then a resonant lowpass that sinks
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.exponentialRampToValueAtTime(0.55 * amp, t + 0.01);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + 5);
+
+  const shaper = ctx.createWaveShaper();
+  shaper.curve = driveCurve(8);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.Q.value = 12;
+  lp.frequency.setValueAtTime(1100 + 900 * amp, t);
+  lp.frequency.exponentialRampToValueAtTime(90, t + 3.5);
+  out.connect(shaper);
+  shaper.connect(lp);
+  lp.connect(master);
+
+  // sub octave with two detuned saws
+  const low = freq / 2;
+  [[low, 'sawtooth', 0.6], [low * 1.006, 'sawtooth', 0.35], [low * 0.5, 'sine', 0.5]].forEach(([f, type, level]) => {
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    g.gain.value = level;
+    o.connect(g);
+    g.connect(out);
+    o.start(t);
+    o.stop(t + 5.2);
+  });
+
+  // kick: a sine that drops fast in pitch
+  const kick = ctx.createOscillator();
+  kick.frequency.setValueAtTime(140, t);
+  kick.frequency.exponentialRampToValueAtTime(38, t + 0.22);
+  const kg = ctx.createGain();
+  kg.gain.setValueAtTime(0.9 * amp, t);
+  kg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+  kick.connect(kg);
+  kg.connect(master);
+  kick.start(t);
+  kick.stop(t + 0.4);
+}
+
+// stab voice, in the spirit of daft punk: a short, filter-swept chord
+function playStab(freq, vel) {
+  if (!ctx) return;
+  hideHint();
+  const t = ctx.currentTime;
+  const amp = constrain(vel, 0.3, 1);
+
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.exponentialRampToValueAtTime(0.4 * amp, t + 0.005);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+
+  const shaper = ctx.createWaveShaper();
+  shaper.curve = driveCurve(2.5);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.Q.value = 7;
+  lp.frequency.setValueAtTime(3200, t);
+  lp.frequency.exponentialRampToValueAtTime(350, t + 0.45);
+  out.connect(shaper);
+  shaper.connect(lp);
+  lp.connect(master);
+
+  // root, minor third, fifth, each with a detuned pair of saws
+  [1, 1.1892, 1.4983].forEach(ratio => {
+    [-7, 7].forEach(cents => {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = freq * ratio * 2 * Math.pow(2, cents / 1200);
+      const g = ctx.createGain();
+      g.gain.value = 0.25;
+      o.connect(g);
+      g.connect(out);
+      o.start(t);
+      o.stop(t + 1.2);
+    });
+  });
+}
+
+// threads
+
+function paletteAt(t) {
+  const seg = t * (PALETTE.length - 1);
+  const i = Math.min(Math.floor(seg), PALETTE.length - 2);
+  const f = seg - i;
+  const a = PALETTE[i];
+  const b = PALETTE[i + 1];
+  return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f)];
+}
+
+class Thread {
+  constructor(note, t) {
+    this.note = note;
+    this.t = t;
+    this.x = 0;
+    this.energy = 0;
+    this.phase = 0;
+  }
+
+  pluck(v) {
+    this.energy = Math.max(this.energy, v);
+    if (v > 0.6) {
+      // hard strokes stab, and sometimes sink into the dark voice too
+      playStab(this.note, v);
+      if (Math.random() < 0.3) playDeep(this.note, v);
+    } else if (Math.random() < 0.12 + (1 - this.t) * 0.15) {
+      playDeep(this.note, v);
+    } else {
+      playNote(this.note, v);
+    }
+  }
+
+  update() {
+    this.phase += 0.14 + this.energy * 0.1;
+    this.energy *= 0.985;
+    if (this.energy < 0.002) this.energy = 0;
+  }
+
+  draw(top, bottom) {
+    const [r, g, b] = paletteAt(this.t);
+    const e = this.energy;
+
+    stroke(r, g, b, 170 + e * 85);
+    strokeWeight(1 + e * 1.4);
+    noFill();
+
+    beginShape();
+    for (let y = top; y <= bottom; y += 6) {
+      const u = (y - top) / (bottom - top);
+      const off = e * 36 * Math.sin(Math.PI * u) * Math.sin(this.phase);
+      vertex(this.x + off, y);
+    }
+    endShape();
+  }
+}
+
+// interaction
+
+function handleMove(x0, x1, speed) {
+  if (!strings.length || speed < 1) return;
+  const lo = Math.min(x0, x1);
+  const hi = Math.max(x0, x1);
+  const vel = constrain(speed / 30, 0.2, 1);
+  for (const s of strings) {
+    if (s.x >= lo && s.x <= hi) s.pluck(vel);
+  }
+}
+
+function mousePressed() {
+  unlockAudio();
+}
+
+function touchStarted() {
+  unlockAudio();
+  return false;
+}
+
+function mouseMoved() {
+  cursorX = mouseX;
+  cursorY = mouseY;
+  handleMove(pmouseX, mouseX, Math.abs(mouseX - pmouseX));
+}
+
+function touchMoved() {
+  cursorX = mouseX;
+  cursorY = mouseY;
+  handleMove(pmouseX, mouseX, Math.abs(mouseX - pmouseX));
+  return false;
+}
+
+// the five-petal flower cursor, filled
+
+function drawFlower(x, y) {
+  const [r, g, b] = FLOWER;
+  const size = 11;
+  push();
+  translate(x, y);
+  rotate(frameCount * 0.004);
+  noStroke();
+  fill(r, g, b, 235);
+  for (let i = 0; i < 5; i++) {
+    push();
+    rotate((i * TWO_PI) / 5);
+    ellipse(0, -size * 0.55, size * 0.9, size * 1.1);
+    pop();
+  }
+  fill(20, 14, 30, 200);
+  circle(0, 0, size * 0.42);
+  pop();
+}
+
+// p5 lifecycle
+
+function layout() {
+  strings.forEach(s => {
+    s.x = lerp(width * 0.12, width * 0.88, s.t);
+  });
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  hintEl = document.getElementById('hint');
+  strings = NOTES.map((n, i) => new Thread(n, i / (NOTES.length - 1)));
+  cursorX = width / 2;
+  cursorY = height / 2;
+  layout();
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  layout();
+}
+
+function draw() {
+  clear();
+  const top = height * 0.1;
+  const bottom = height * 0.9;
+  for (const s of strings) {
+    s.update();
+    s.draw(top, bottom);
+  }
+  drawFlower(cursorX, cursorY);
+}
+</script>
+</body>
+</html>

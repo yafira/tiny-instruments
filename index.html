@@ -1,52 +1,37 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-
-    <title>synthwave chimes</title>
-    <meta
-      name="description"
-      content="a p5.js synth wind chime. hover, tap, or drag across the chimes to play."
-    />
-    <link rel="stylesheet" type="text/css" href="style.css" />
-
-    <link rel="icon" type="image/png" href="purple-flower.png" />
-    <link rel="apple-touch-icon" href="purple-flower.png" />
-
-    <meta name="theme-color" content="#f2acde" />
-  </head>
-
-  <body>
-    <main id="chime-container">
-      <div id="hook" aria-hidden="true"></div>
-
-      <p id="hint">
-        <span class="hint-mouse"
-          >click once, then hover over the&nbsp;chimes</span
-        >
-        <span class="hint-touch">tap or drag across the&nbsp;chimes</span>
-      </p>
-
-      <div id="visualization" aria-hidden="true">
-        <div id="freq-text"></div>
-      </div>
-    </main>
-
-    <footer id="site-footer">
-      <p>
-        synthesized with 🖤 by
-        <a href="https://yafira.xyz/" target="_blank" rel="noopener noreferrer">
-          yafira&nbsp;(electrocute)
-        </a>
-      </p>
-    </footer>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-    <script src="sketch.js"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tiny instruments</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; min-height: 100%; background: #040306; color: #e6d9f2; font-family: 'IBM Plex Mono', monospace; }
+  main { max-width: 560px; margin: 0 auto; padding: 72px 24px; }
+  h1 { font-size: 13px; font-weight: 500; letter-spacing: 0.12em; margin: 0 0 40px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { border-top: 1px solid #2a2435; }
+  li:last-child { border-bottom: 1px solid #2a2435; }
+  a { display: block; padding: 20px 0; color: inherit; text-decoration: none; }
+  a:hover, a:focus-visible { color: #f2acde; }
+  .name { font-size: 15px; }
+  .note { display: block; margin-top: 6px; font-size: 12px; opacity: 0.6; text-wrap: balance; }
+</style>
+</head>
+<body>
+<main>
+  <h1>tiny instruments</h1>
+  <ul>
+    <li><a href="harp/">
+      <span class="name">synthwave harp</span>
+      <span class="note">drag across the threads to pluck them. hard plucks hit like a stab.</span>
+    </a></li>
+    <li><a href="chimes/">
+      <span class="name">synthwave chimes</span>
+      <span class="note">hover or tap the chimes to ring them.</span>
+    </a></li>
+  </ul>
+</main>
+</body>
 </html>
