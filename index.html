@@ -3,35 +3,49 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>tiny instruments</title>
+<title>tiny instruments by electrocute lab</title>
+<meta name="description" content="small browser music instruments by electrocute lab.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   html, body { margin: 0; min-height: 100%; background: #040306; color: #e6d9f2; font-family: 'IBM Plex Mono', monospace; }
-  main { max-width: 560px; margin: 0 auto; padding: 72px 24px; }
-  h1 { font-size: 13px; font-weight: 500; letter-spacing: 0.12em; margin: 0 0 40px; }
-  ul { list-style: none; padding: 0; margin: 0; }
-  li { border-top: 1px solid #2a2435; }
-  li:last-child { border-bottom: 1px solid #2a2435; }
-  a { display: block; padding: 20px 0; color: inherit; text-decoration: none; }
-  a:hover, a:focus-visible { color: #f2acde; }
-  .name { font-size: 15px; }
-  .note { display: block; margin-top: 6px; font-size: 12px; opacity: 0.6; text-wrap: balance; }
+  main { max-width: 720px; margin: 0 auto; padding: 72px 24px 96px; }
+  header { margin-bottom: 48px; }
+  h1 { font-size: 15px; font-weight: 500; letter-spacing: 0.12em; margin: 0 0 10px; }
+  header p { margin: 0; font-size: 12px; line-height: 1.7; opacity: 0.6; text-wrap: balance; }
+  header a { color: #ffecaa; text-decoration: none; }
+  header a:hover, header a:focus-visible { text-decoration: underline; }
+  .card { display: block; margin-bottom: 40px; color: inherit; text-decoration: none; }
+  .card img { display: block; width: 100%; height: auto; border: 1px solid #2a2435; border-radius: 4px; transition: border-color 0.4s; }
+  .card:hover img, .card:focus-visible img { border-color: #ffb8d8; }
+  .name { display: block; margin-top: 14px; font-size: 15px; }
+  .note { display: block; margin-top: 6px; font-size: 12px; line-height: 1.6; opacity: 0.6; text-wrap: balance; }
+  footer { margin-top: 64px; font-size: 12px; opacity: 0.5; }
+  footer a { color: inherit; }
 </style>
 </head>
 <body>
 <main>
-  <h1>tiny instruments</h1>
-  <ul>
-    <li><a href="harp/">
-      <span class="name">synthwave harp</span>
-      <span class="note">drag across the threads to pluck them. hard plucks hit like a stab.</span>
-    </a></li>
-    <li><a href="chimes/">
-      <span class="name">synthwave chimes</span>
-      <span class="note">hover or tap the chimes to ring them.</span>
-    </a></li>
-  </ul>
+  <header>
+    <h1>tiny instruments</h1>
+    <p>small browser music instruments by <a href="https://www.electrocutelab.com/">electrocute lab</a>. drag, tap, or hover to play.</p>
+  </header>
+
+  <a class="card" href="harp/">
+    <img src="previews/harp.png" alt="synthwave harp: pastel threads bending under a cursor" width="1200" height="800" loading="lazy">
+    <span class="name">synthwave harp</span>
+    <span class="note">drag across the threads to pluck them. hard plucks hit like a stab, and low threads sink into the dark.</span>
+  </a>
+
+  <a class="card" href="chimes/">
+    <img src="previews/chimes.png" alt="synthwave chimes: shapes swaying from a bar" width="1200" height="800" loading="lazy">
+    <span class="name">synthwave chimes</span>
+    <span class="note">hover or tap the chimes to ring them. each shape has its own voice.</span>
+  </a>
+
+  <footer>
+    <a href="https://www.electrocutelab.com/">electrocute lab</a> · <a href="https://yafira.xyz/">yafira (electrocute)</a>
+  </footer>
 </main>
 </body>
 </html>
