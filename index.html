@@ -15,13 +15,17 @@
   header p { margin: 0; font-size: 12px; line-height: 1.7; opacity: 0.6; text-wrap: balance; }
   header a { color: #ffecaa; text-decoration: none; }
   header a:hover, header a:focus-visible { text-decoration: underline; }
-  .item { margin-bottom: 44px; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; }
+  .item { position: relative; width: 240px; }
   .box { display: block; width: 240px; height: 160px; border: 1px solid #2a2435; border-radius: 4px; background: #15101f; touch-action: none; cursor: crosshair; }
-  .name { display: block; margin-top: 14px; font-size: 15px; }
-  .name a { color: inherit; text-decoration: none; }
-  .name a:hover, .name a:focus-visible { color: #ffb8d8; }
-  .note { display: block; margin-top: 6px; font-size: 12px; line-height: 1.6; opacity: 0.6; text-wrap: balance; max-width: 360px; }
-  .hint { font-size: 11px; opacity: 0.4; margin-top: 4px; }
+  .info { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #6b5f85; background: #15101f; color: #e6d9f2; font: inherit; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
+  .info:hover, .info:focus-visible { border-color: #ffb8d8; color: #ffb8d8; }
+  .panel { display: none; position: absolute; top: 0; left: 0; width: 240px; height: 160px; box-sizing: border-box; padding: 16px; border: 1px solid #2a2435; border-radius: 4px; background: rgba(10, 8, 18, 0.96); font-size: 12px; line-height: 1.6; overflow: auto; z-index: 3; }
+  .item.open .panel { display: block; }
+  .panel strong { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .panel p { margin: 0 0 10px; opacity: 0.75; text-wrap: balance; }
+  .panel a { color: #ffecaa; }
+  .close { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #6b5f85; background: transparent; color: #e6d9f2; font: inherit; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
   footer { margin-top: 64px; font-size: 12px; opacity: 0.5; }
   footer a { color: inherit; }
 </style>
@@ -33,19 +37,29 @@
     <p>small browser music instruments by <a href="https://www.electrocutelab.com/">electrocute lab</a>. drag, tap, or hover to play.</p>
   </header>
 
-  <section class="item">
-    <canvas class="box" id="harp-box" aria-label="mini night harp: move across the threads to pluck them" role="img"></canvas>
-    <span class="name"><a href="night-harp/">night harp</a></span>
-    <span class="note">drag across the threads to pluck them. hard plucks hit like a stab, and low threads sink into the dark.</span>
-    <span class="hint">move across the box to play</span>
-  </section>
+  <div class="row">
+    <div class="item" id="harp-item">
+      <canvas class="box" id="harp-box" aria-label="mini night harp: move across the threads to pluck them" role="img"></canvas>
+      <button class="info" type="button" aria-label="about night harp" aria-expanded="false">i</button>
+      <div class="panel" role="region" aria-label="about night harp">
+        <button class="close" type="button" aria-label="close">×</button>
+        <strong>night harp</strong>
+        <p>drag across the threads to pluck them. hard plucks hit like a stab, and low threads sink into the dark.</p>
+        <a href="night-harp/">open night harp →</a>
+      </div>
+    </div>
 
-  <section class="item">
-    <canvas class="box" id="chimes-box" aria-label="mini synthwave chimes: hover a shape to ring it" role="img"></canvas>
-    <span class="name"><a href="chimes/">synthwave chimes</a></span>
-    <span class="note">hover or tap the chimes to ring them. each shape has its own voice.</span>
-    <span class="hint">hover a shape to ring it</span>
-  </section>
+    <div class="item" id="chimes-item">
+      <canvas class="box" id="chimes-box" aria-label="mini synthwave chimes: hover a shape to ring it" role="img"></canvas>
+      <button class="info" type="button" aria-label="about synthwave chimes" aria-expanded="false">i</button>
+      <div class="panel" role="region" aria-label="about synthwave chimes">
+        <button class="close" type="button" aria-label="close">×</button>
+        <strong>synthwave chimes</strong>
+        <p>hover or tap the chimes to ring them. each shape has its own voice.</p>
+        <a href="chimes/">open synthwave chimes →</a>
+      </div>
+    </div>
+  </div>
 
   <footer>
     <a href="https://www.electrocutelab.com/">electrocute lab</a> · <a href="https://yafira.xyz/">yafira (electrocute)</a>
@@ -262,6 +276,18 @@ function frame() {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// info panels: the i opens a short description, × closes it
+document.querySelectorAll('.item').forEach(item => {
+  const info = item.querySelector('.info');
+  const close = item.querySelector('.close');
+  const set = open => {
+    item.classList.toggle('open', open);
+    info.setAttribute('aria-expanded', String(open));
+  };
+  info.addEventListener('click', e => { e.stopPropagation(); set(!item.classList.contains('open')); });
+  close.addEventListener('click', () => set(false));
+});
 </script>
 </body>
 </html>
