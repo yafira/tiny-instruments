@@ -15,11 +15,13 @@
   header p { margin: 0; font-size: 12px; line-height: 1.7; opacity: 0.6; text-wrap: balance; }
   header a { color: #ffecaa; text-decoration: none; }
   header a:hover, header a:focus-visible { text-decoration: underline; }
-  .card { display: block; margin-bottom: 40px; color: inherit; text-decoration: none; }
-  .card img { display: block; width: 100%; height: auto; border: 1px solid #2a2435; border-radius: 4px; transition: border-color 0.4s; }
-  .card:hover img, .card:focus-visible img { border-color: #ffb8d8; }
+  .item { margin-bottom: 44px; }
+  .box { display: block; width: 240px; height: 160px; border: 1px solid #2a2435; border-radius: 4px; background: #0a0812; touch-action: none; cursor: crosshair; }
   .name { display: block; margin-top: 14px; font-size: 15px; }
-  .note { display: block; margin-top: 6px; font-size: 12px; line-height: 1.6; opacity: 0.6; text-wrap: balance; }
+  .name a { color: inherit; text-decoration: none; }
+  .name a:hover, .name a:focus-visible { color: #ffb8d8; }
+  .note { display: block; margin-top: 6px; font-size: 12px; line-height: 1.6; opacity: 0.6; text-wrap: balance; max-width: 360px; }
+  .hint { font-size: 11px; opacity: 0.4; margin-top: 4px; }
   footer { margin-top: 64px; font-size: 12px; opacity: 0.5; }
   footer a { color: inherit; }
 </style>
@@ -31,21 +33,234 @@
     <p>small browser music instruments by <a href="https://www.electrocutelab.com/">electrocute lab</a>. drag, tap, or hover to play.</p>
   </header>
 
-  <a class="card" href="harp/">
-    <img src="previews/harp.png" alt="synthwave harp: pastel threads bending under a cursor" width="1200" height="800" loading="lazy">
-    <span class="name">synthwave harp</span>
+  <section class="item">
+    <canvas class="box" id="harp-box" aria-label="mini night harp: move across the threads to pluck them" role="img"></canvas>
+    <span class="name"><a href="night-harp/">night harp</a></span>
     <span class="note">drag across the threads to pluck them. hard plucks hit like a stab, and low threads sink into the dark.</span>
-  </a>
+    <span class="hint">move across the box to play</span>
+  </section>
 
-  <a class="card" href="chimes/">
-    <img src="previews/chimes.png" alt="synthwave chimes: shapes swaying from a bar" width="1200" height="800" loading="lazy">
-    <span class="name">synthwave chimes</span>
+  <section class="item">
+    <canvas class="box" id="chimes-box" aria-label="mini synthwave chimes: hover a shape to ring it" role="img"></canvas>
+    <span class="name"><a href="chimes/">synthwave chimes</a></span>
     <span class="note">hover or tap the chimes to ring them. each shape has its own voice.</span>
-  </a>
+    <span class="hint">hover a shape to ring it</span>
+  </section>
 
   <footer>
     <a href="https://www.electrocutelab.com/">electrocute lab</a> · <a href="https://yafira.xyz/">yafira (electrocute)</a>
   </footer>
 </main>
+
+<script>
+// shared audio, made on the first gesture
+let actx = null;
+let out = null;
+
+function audio() {
+  if (!actx) {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    out = actx.createGain();
+    out.gain.value = 0.3;
+    out.connect(actx.destination);
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+
+// one soft tone with a slow fade
+function tone(freq, type, len) {
+  if (!actx) return;
+  const t = actx.currentTime;
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g);
+  g.connect(out);
+  o.start(t);
+  o.stop(t + len + 0.1);
+}
+
+// fit a canvas to its box at device pixel ratio
+function fit(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+// mini harp: six threads, a move across one plucks it
+
+const harpCanvas = document.getElementById('harp-box');
+const HARP_NOTES = [196, 261.63, 329.63, 392, 523.25, 659.26];
+const PINK = [255, 186, 216];
+const LAV = [206, 186, 255];
+const MINT = [178, 232, 214];
+const threads = HARP_NOTES.map((f, i) => ({ f, x: 0, energy: 0, phase: 0, t: i / (HARP_NOTES.length - 1) }));
+let harpLast = null;
+
+function harpLayout(w) {
+  threads.forEach(th => { th.x = w * 0.15 + th.t * w * 0.7; });
+}
+
+function harpPluck(th, v) {
+  th.energy = Math.max(th.energy, v);
+  tone(th.f, 'sine', 3);
+}
+
+function harpMove(e) {
+  const rect = harpCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  if (harpLast !== null) {
+    const lo = Math.min(harpLast, x);
+    const hi = Math.max(harpLast, x);
+    const speed = Math.abs(x - harpLast);
+    if (speed > 1) {
+      threads.forEach(th => {
+        if (th.x >= lo && th.x <= hi) harpPluck(th, Math.min(1, speed / 30));
+      });
+    }
+  }
+  harpLast = x;
+}
+
+function harpDraw() {
+  const { ctx, w, h } = fit(harpCanvas);
+  harpLayout(w);
+  ctx.clearRect(0, 0, w, h);
+  const top = h * 0.12;
+  const bottom = h * 0.88;
+  threads.forEach((th, i) => {
+    const c = i < 2 ? PINK : i < 4 ? LAV : MINT;
+    const e = th.energy;
+    ctx.strokeStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${0.7 + e * 0.3})`;
+    ctx.lineWidth = 1 + e * 1.2;
+    ctx.beginPath();
+    for (let y = top; y <= bottom; y += 4) {
+      const u = (y - top) / (bottom - top);
+      const off = e * 20 * Math.sin(Math.PI * u) * Math.sin(th.phase);
+      if (y === top) ctx.moveTo(th.x + off, y);
+      else ctx.lineTo(th.x + off, y);
+    }
+    ctx.stroke();
+    th.phase += 0.14 + e * 0.1;
+    th.energy *= 0.97;
+    if (th.energy < 0.002) th.energy = 0;
+  });
+}
+
+// mini chimes: five shapes on a bar, hovering rings them
+
+const chimesCanvas = document.getElementById('chimes-box');
+const CHIME_NOTES = [261.63, 329.63, 392, 523.25, 659.26];
+const CHIME_SHAPES = ['circle', 'flower', 'square', 'rect', 'flower'];
+const chimes = CHIME_NOTES.map((f, i) => ({ f, shape: CHIME_SHAPES[i], t: i / (CHIME_NOTES.length - 1), flip: 0, color: null, phase: i * 1.3, len: 0.3 + (i % 2) * 0.25 }));
+let chimeHit = -1;
+
+function chimeGeom(w, h) {
+  const barY = h * 0.14;
+  return chimes.map(c => {
+    const x = w * 0.15 + c.t * w * 0.7;
+    const y = barY + h * (0.22 + c.len * 0.4);
+    return { x, y };
+  });
+}
+
+function drawChime(ctx, shape, x, y, size, flip, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  const fillColor = color || '#000';
+  ctx.fillStyle = fillColor;
+  if (shape === 'circle') {
+    ctx.beginPath();
+    ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (shape === 'square') {
+    ctx.fillRect(-size / 2, -size / 2, size, size);
+  } else if (shape === 'rect') {
+    ctx.fillRect(-size * 0.1, -size * 0.8, size * 0.2, size * 1.6);
+  } else {
+    ctx.rotate(flip * Math.PI);
+    for (let i = 0; i < 5; i++) {
+      ctx.save();
+      ctx.rotate((i * Math.PI * 2) / 5);
+      ctx.beginPath();
+      ctx.ellipse(0, -size * 0.25, size * 0.22, size * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function chimeAt(x, y, geom) {
+  const s = 26;
+  return geom.findIndex(g => Math.hypot(g.x - x, g.y - y) < s);
+}
+
+function chimeHover(e) {
+  const rect = chimesCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const { w, h } = { w: rect.width, h: rect.height };
+  const hit = chimeAt(x, y, chimeGeom(w, h));
+  if (hit !== -1 && hit !== chimeHit) ring(hit);
+  chimeHit = hit;
+}
+
+function ring(i) {
+  const c = chimes[i];
+  c.flip = 1;
+  c.color = `rgb(${Math.floor(200 + Math.random() * 56)}, ${Math.floor(200 + Math.random() * 56)}, ${Math.floor(200 + Math.random() * 56)})`;
+  tone(c.f, c.shape === 'square' ? 'square' : c.shape === 'rect' ? 'sawtooth' : 'sine', 2.5);
+  setTimeout(() => { c.color = null; }, 1200);
+}
+
+function chimesDraw() {
+  const { ctx, w, h } = fit(chimesCanvas);
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = '#2a2435';
+  ctx.fillStyle = '#000';
+  ctx.fillRect(w * 0.12, h * 0.02, w * 0.76, h * 0.06);
+  const geom = chimeGeom(w, h);
+  chimes.forEach((c, i) => {
+    const g = geom[i];
+    const sway = Math.sin(performance.now() / 1200 + c.phase) * 3;
+    ctx.beginPath();
+    ctx.moveTo(g.x, h * 0.08);
+    ctx.lineTo(g.x + sway, g.y);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    c.flip *= 0.94;
+    drawChime(ctx, c.shape, g.x + sway, g.y, 22, c.flip, c.color);
+  });
+}
+
+// hover and touch
+
+function wire(canvas, onMove) {
+  canvas.addEventListener('pointerdown', e => { audio(); onMove(e); });
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerleave', () => { harpLast = null; chimeHit = -1; });
+}
+
+wire(harpCanvas, harpMove);
+wire(chimesCanvas, chimeHover);
+
+function frame() {
+  harpDraw();
+  chimesDraw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
 </body>
 </html>

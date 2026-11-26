@@ -2,7 +2,7 @@
 
 small browser instruments made with p5.js and the Web Audio API. drag, tap, or hover to play.
 
-- [synthwave harp](harp/): drag across the threads to pluck them. hard plucks hit like a stab.
+- [night harp](night-harp/): drag across the threads to pluck them. hard plucks hit like a stab.
 - [synthwave chimes](chimes/): hover or tap the chimes to ring them.
 
 ## run it locally
