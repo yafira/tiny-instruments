@@ -6,7 +6,7 @@
 <title>tiny instruments, musical toys</title>
 <meta name="description" content="small browser music instruments by electrocute lab.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>
   // pick the theme before the page paints: saved choice first, then the system setting
   (function () {
@@ -17,6 +17,14 @@
   })();
 </script>
 <style>
+  /* paper mono, open font license 1.1, see fonts/OFL-PaperMono.txt */
+  @font-face {
+    font-family: 'Paper Mono';
+    src: url('fonts/PaperMono-Variable.woff2') format('woff2');
+    font-weight: 100 800;
+    font-display: swap;
+  }
+
   :root {
     --bg: #f6f1ea;
     --ink: #2a1f3d;
@@ -45,7 +53,7 @@
   html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Mono', monospace; transition: background 0.4s, color 0.4s; }
   main { max-width: 720px; margin: 0 auto; padding: 72px 24px 96px; }
   header { margin-bottom: 48px; }
-  h1 { font-family: 'Pixelify Sans', 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 500; letter-spacing: 0.01em; line-height: 1.2; margin: 0 0 14px; }
+  h1 { font-family: 'Paper Mono', 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 500; letter-spacing: 0; line-height: 1.2; margin: 0 0 14px; }
   header p { margin: 0; font-size: 12px; line-height: 1.7; color: var(--muted); text-wrap: balance; }
   header a { color: var(--accent); text-decoration: none; }
   header a:hover, header a:focus-visible { text-decoration: underline; color: var(--accent-hover); }
