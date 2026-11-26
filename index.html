@@ -16,7 +16,7 @@
   header a { color: #ffecaa; text-decoration: none; }
   header a:hover, header a:focus-visible { text-decoration: underline; }
   .item { margin-bottom: 44px; }
-  .box { display: block; width: 240px; height: 160px; border: 1px solid #2a2435; border-radius: 4px; background: #0a0812; touch-action: none; cursor: crosshair; }
+  .box { display: block; width: 240px; height: 160px; border: 1px solid #2a2435; border-radius: 4px; background: #15101f; touch-action: none; cursor: crosshair; }
   .name { display: block; margin-top: 14px; font-size: 15px; }
   .name a { color: inherit; text-decoration: none; }
   .name a:hover, .name a:focus-visible { color: #ffb8d8; }
@@ -162,7 +162,8 @@ function harpDraw() {
 const chimesCanvas = document.getElementById('chimes-box');
 const CHIME_NOTES = [261.63, 329.63, 392, 523.25, 659.26];
 const CHIME_SHAPES = ['circle', 'flower', 'square', 'rect', 'flower'];
-const chimes = CHIME_NOTES.map((f, i) => ({ f, shape: CHIME_SHAPES[i], t: i / (CHIME_NOTES.length - 1), flip: 0, color: null, phase: i * 1.3, len: 0.3 + (i % 2) * 0.25 }));
+const CHIME_BASE = ['#ffbad6', '#cebaff', '#b2e8d6', '#ffbad6', '#cebaff'];
+const chimes = CHIME_NOTES.map((f, i) => ({ f, shape: CHIME_SHAPES[i], base: CHIME_BASE[i], t: i / (CHIME_NOTES.length - 1), flip: 0, color: null, phase: i * 1.3, len: 0.3 + (i % 2) * 0.25 }));
 let chimeHit = -1;
 
 function chimeGeom(w, h) {
@@ -227,8 +228,8 @@ function ring(i) {
 function chimesDraw() {
   const { ctx, w, h } = fit(chimesCanvas);
   ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = '#2a2435';
-  ctx.fillStyle = '#000';
+  ctx.strokeStyle = '#6b5f85';
+  ctx.fillStyle = '#3a3050';
   ctx.fillRect(w * 0.12, h * 0.02, w * 0.76, h * 0.06);
   const geom = chimeGeom(w, h);
   chimes.forEach((c, i) => {
@@ -240,7 +241,7 @@ function chimesDraw() {
     ctx.lineWidth = 1;
     ctx.stroke();
     c.flip *= 0.94;
-    drawChime(ctx, c.shape, g.x + sway, g.y, 22, c.flip, c.color);
+    drawChime(ctx, c.shape, g.x + sway, g.y, 22, c.flip, c.color || c.base);
   });
 }
 
