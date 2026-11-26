@@ -7,30 +7,71 @@
 <meta name="description" content="small browser music instruments by electrocute lab.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  // pick the theme before the page paints: saved choice first, then the system setting
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('tiny-theme'); } catch (e) {}
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = saved || (dark ? 'dark' : 'light');
+  })();
+</script>
 <style>
-  html, body { margin: 0; min-height: 100%; background: #f6f1ea; color: #2a1f3d; font-family: 'IBM Plex Mono', monospace; }
+  :root {
+    --bg: #f6f1ea;
+    --ink: #2a1f3d;
+    --muted: rgba(42, 31, 61, 0.7);
+    --accent: #a4577f;
+    --accent-hover: #7c3f66;
+    --box: #fbf8f3;
+    --box-edge: #e0d6e6;
+    --panel: rgba(246, 241, 234, 0.97);
+    --info: rgba(42, 31, 61, 0.45);
+    --shadow: rgba(42, 31, 61, 0.08);
+  }
+  [data-theme="dark"] {
+    --bg: #040306;
+    --ink: #e6d9f2;
+    --muted: rgba(230, 217, 242, 0.6);
+    --accent: #ffecaa;
+    --accent-hover: #ffb8d8;
+    --box: #15101f;
+    --box-edge: #2a2435;
+    --panel: rgba(10, 8, 18, 0.96);
+    --info: rgba(230, 217, 242, 0.4);
+    --shadow: rgba(0, 0, 0, 0.4);
+  }
+
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Mono', monospace; transition: background 0.4s, color 0.4s; }
   main { max-width: 720px; margin: 0 auto; padding: 72px 24px 96px; }
   header { margin-bottom: 48px; }
   h1 { font-size: 15px; font-weight: 500; letter-spacing: 0.12em; margin: 0 0 10px; }
-  header p { margin: 0; font-size: 12px; line-height: 1.7; opacity: 0.75; text-wrap: balance; }
-  header a { color: #a4577f; text-decoration: none; }
-  header a:hover, header a:focus-visible { text-decoration: underline; color: #7c3f66; }
+  header p { margin: 0; font-size: 12px; line-height: 1.7; color: var(--muted); text-wrap: balance; }
+  header a { color: var(--accent); text-decoration: none; }
+  header a:hover, header a:focus-visible { text-decoration: underline; color: var(--accent-hover); }
+
+  .theme { position: fixed; top: 20px; right: 24px; background: transparent; border: 1px solid var(--box-edge); border-radius: 999px; padding: 4px 12px; color: var(--muted); font: inherit; font-size: 11px; letter-spacing: 0.04em; cursor: pointer; }
+  .theme:hover, .theme:focus-visible { color: var(--accent-hover); border-color: var(--accent); }
+
   .row { display: flex; flex-wrap: wrap; gap: 24px; }
   .item { position: relative; width: 240px; }
-  .box { display: block; width: 240px; height: 160px; border: 1px solid #2a2435; border-radius: 4px; background: #15101f; touch-action: none; cursor: crosshair; box-shadow: 0 6px 18px rgba(42, 31, 61, 0.12); }
-  .info { position: absolute; bottom: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid transparent; background: transparent; color: rgba(230, 217, 242, 0.4); font: inherit; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
-  .info:hover, .info:focus-visible { border-color: rgba(255, 184, 216, 0.5); color: #ffb8d8; }
-  .panel { display: none; position: absolute; top: 0; left: 0; width: 240px; height: 160px; box-sizing: border-box; padding: 16px; border: 1px solid #2a2435; border-radius: 4px; background: rgba(246, 241, 234, 0.97); color: #2a1f3d; font-size: 12px; line-height: 1.6; overflow: auto; z-index: 3; }
+  .box { display: block; width: 240px; height: 160px; border: 1px solid var(--box-edge); border-radius: 4px; background: var(--box); touch-action: none; cursor: crosshair; box-shadow: 0 6px 18px var(--shadow); }
+  .info { position: absolute; bottom: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid transparent; background: transparent; color: var(--info); font: inherit; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
+  .info:hover, .info:focus-visible { border-color: var(--accent); color: var(--accent); }
+  .panel { display: none; position: absolute; top: 0; left: 0; width: 240px; height: 160px; box-sizing: border-box; padding: 16px; border: 1px solid var(--box-edge); border-radius: 4px; background: var(--panel); color: var(--ink); font-size: 12px; line-height: 1.6; overflow: auto; z-index: 3; }
   .item.open .panel { display: block; }
   .panel strong { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
-  .panel p { margin: 0 0 10px; opacity: 0.75; text-wrap: balance; }
-  .panel a { color: #a4577f; }
-  .close { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #b9a9c9; background: transparent; color: #2a1f3d; font: inherit; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
-  footer { margin-top: 64px; font-size: 12px; opacity: 0.6; }
+  .panel p { margin: 0 0 10px; color: var(--muted); text-wrap: balance; }
+  .panel a { color: var(--accent); }
+  .close { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--box-edge); background: transparent; color: var(--ink); font: inherit; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
+
+  footer { margin-top: 64px; font-size: 12px; color: var(--muted); }
   footer a { color: inherit; }
 </style>
 </head>
 <body>
+<button class="theme" type="button" id="theme-toggle" aria-label="switch theme">dark</button>
+
 <main>
   <header>
     <h1>tiny instruments</h1>
@@ -67,6 +108,28 @@
 </main>
 
 <script>
+// colors for the previews, per theme
+const PAL = {
+  light: {
+    threads: [[214, 120, 165], [140, 120, 210], [82, 166, 134]],
+    chimes: ['#e58fb8', '#9b87df', '#63b89b', '#e58fb8', '#9b87df'],
+    bar: '#d9cfe3',
+    string: '#8a7ea3',
+    ring: [150, 120, 170],
+  },
+  dark: {
+    threads: [[255, 186, 216], [206, 186, 255], [178, 232, 214]],
+    chimes: ['#ffbad6', '#cebaff', '#b2e8d6', '#ffbad6', '#cebaff'],
+    bar: '#3a3050',
+    string: '#6b5f85',
+    ring: [200, 200, 200],
+  },
+};
+
+function theme() {
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
 // shared audio, made on the first gesture
 let actx = null;
 let out = null;
@@ -115,9 +178,6 @@ function fit(canvas) {
 
 const harpCanvas = document.getElementById('harp-box');
 const HARP_NOTES = [196, 261.63, 329.63, 392, 523.25, 659.26];
-const PINK = [255, 186, 216];
-const LAV = [206, 186, 255];
-const MINT = [178, 232, 214];
 const threads = HARP_NOTES.map((f, i) => ({ f, x: 0, energy: 0, phase: 0, t: i / (HARP_NOTES.length - 1) }));
 let harpLast = null;
 
@@ -152,8 +212,9 @@ function harpDraw() {
   ctx.clearRect(0, 0, w, h);
   const top = h * 0.12;
   const bottom = h * 0.88;
+  const pal = PAL[theme()].threads;
   threads.forEach((th, i) => {
-    const c = i < 2 ? PINK : i < 4 ? LAV : MINT;
+    const c = pal[i < 2 ? 0 : i < 4 ? 1 : 2];
     const e = th.energy;
     ctx.strokeStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${0.7 + e * 0.3})`;
     ctx.lineWidth = 1 + e * 1.2;
@@ -176,8 +237,7 @@ function harpDraw() {
 const chimesCanvas = document.getElementById('chimes-box');
 const CHIME_NOTES = [261.63, 329.63, 392, 523.25, 659.26];
 const CHIME_SHAPES = ['circle', 'flower', 'square', 'rect', 'flower'];
-const CHIME_BASE = ['#ffbad6', '#cebaff', '#b2e8d6', '#ffbad6', '#cebaff'];
-const chimes = CHIME_NOTES.map((f, i) => ({ f, shape: CHIME_SHAPES[i], base: CHIME_BASE[i], t: i / (CHIME_NOTES.length - 1), flip: 0, color: null, phase: i * 1.3, len: 0.3 + (i % 2) * 0.25 }));
+const chimes = CHIME_NOTES.map((f, i) => ({ f, i, shape: CHIME_SHAPES[i], t: i / (CHIME_NOTES.length - 1), flip: 0, color: null, phase: i * 1.3, len: 0.3 + (i % 2) * 0.25 }));
 let chimeHit = -1;
 
 function chimeGeom(w, h) {
@@ -192,8 +252,7 @@ function chimeGeom(w, h) {
 function drawChime(ctx, shape, x, y, size, flip, color) {
   ctx.save();
   ctx.translate(x, y);
-  const fillColor = color || '#000';
-  ctx.fillStyle = fillColor;
+  ctx.fillStyle = color;
   if (shape === 'circle') {
     ctx.beginPath();
     ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
@@ -225,8 +284,7 @@ function chimeHover(e) {
   const rect = chimesCanvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  const { w, h } = { w: rect.width, h: rect.height };
-  const hit = chimeAt(x, y, chimeGeom(w, h));
+  const hit = chimeAt(x, y, chimeGeom(rect.width, rect.height));
   if (hit !== -1 && hit !== chimeHit) ring(hit);
   chimeHit = hit;
 }
@@ -234,16 +292,18 @@ function chimeHover(e) {
 function ring(i) {
   const c = chimes[i];
   c.flip = 1;
-  c.color = `rgb(${Math.floor(200 + Math.random() * 56)}, ${Math.floor(200 + Math.random() * 56)}, ${Math.floor(200 + Math.random() * 56)})`;
+  const r = PAL[theme()].ring;
+  c.color = `rgb(${Math.floor(r[0] + Math.random() * 40)}, ${Math.floor(r[1] + Math.random() * 40)}, ${Math.floor(r[2] + Math.random() * 40)})`;
   tone(c.f, c.shape === 'square' ? 'square' : c.shape === 'rect' ? 'sawtooth' : 'sine', 2.5);
   setTimeout(() => { c.color = null; }, 1200);
 }
 
 function chimesDraw() {
   const { ctx, w, h } = fit(chimesCanvas);
+  const pal = PAL[theme()];
   ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = '#6b5f85';
-  ctx.fillStyle = '#3a3050';
+  ctx.strokeStyle = pal.string;
+  ctx.fillStyle = pal.bar;
   ctx.fillRect(w * 0.12, h * 0.02, w * 0.76, h * 0.06);
   const geom = chimeGeom(w, h);
   chimes.forEach((c, i) => {
@@ -255,7 +315,7 @@ function chimesDraw() {
     ctx.lineWidth = 1;
     ctx.stroke();
     c.flip *= 0.94;
-    drawChime(ctx, c.shape, g.x + sway, g.y, 22, c.flip, c.color || c.base);
+    drawChime(ctx, c.shape, g.x + sway, g.y, 22, c.flip, c.color || pal.chimes[i]);
   });
 }
 
@@ -288,6 +348,22 @@ document.querySelectorAll('.item').forEach(item => {
   info.addEventListener('click', e => { e.stopPropagation(); set(!item.classList.contains('open')); });
   close.addEventListener('click', () => set(false));
 });
+
+// theme toggle: switches light and dark, and remembers the choice
+const toggle = document.getElementById('theme-toggle');
+
+function paintToggle() {
+  toggle.textContent = theme() === 'dark' ? 'light' : 'dark';
+}
+
+toggle.addEventListener('click', () => {
+  const next = theme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('tiny-theme', next); } catch (e) {}
+  paintToggle();
+});
+
+paintToggle();
 </script>
 </body>
 </html>
